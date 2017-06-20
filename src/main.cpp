@@ -91,15 +91,38 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          
+          Eigen::VectorXd waypoints_x(ptsx.size()), waypoints_y(ptsx.size());
+          
+          for (int i = 0; i < ptsx.size(); i++) {
+            double x = ptsx[i] - px;
+            double y = ptsy[i] - py;
+                       
+            double car_x = x * cos(psi) + y * sin(psi);
+            double car_y =  - x * sin(psi) + y * cos(psi);
+            waypoints_x[i] = car_x;
+            waypoints_y[i] = car_y;
 
+          }
+          
+          //Eigen::VectorXd eptsx(ptsx.data);
+          //Eigen::VectorXd eptsy(ptsy.data);
+          auto coeffs = polyfit(waypoints_x, waypoints_y, 3);
+          
+          double cte = polyeval(coeffs, px) - py;
+          double epsi = psi - atan(coeffs[1]);
+          
+          Eigen::VectorXd state(6);
+          state << px, py, psi, v, cte, epsi;
+          auto vars = mpc.Solve(state, coeffs);
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value = vars[7] / 0.436332313;
+          double throttle_value = vars[6];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -108,8 +131,13 @@ int main() {
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
-          vector<double> mpc_x_vals;
-          vector<double> mpc_y_vals;
+          vector<double> mpc_x_vals(waypoints_x.size());
+          vector<double> mpc_y_vals(waypoints_y.size());
+          
+          for (int i = 0; i < ptsx.size(); i++) {
+            mpc_x_vals[i] = waypoints_x[i];
+            mpc_y_vals[i] = waypoints_y[i];
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
