@@ -66,11 +66,6 @@ class FG_eval {
     //
     // NOTE: In this section you'll setup the model constraints.
 
-    // Initial constraints
-    //
-    // We add 1 to each of the starting indices due to cost being located at
-    // index 0 of `fg`.
-    // This bumps up the position of all the other values.
     fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
     fg[1 + psi_start] = vars[psi_start];
@@ -103,16 +98,6 @@ class FG_eval {
       AD<double> f0 = coeffs[0] + coeffs[1] * x0;
       AD<double> psides0 = CppAD::atan(coeffs[1]);
 
-      // Here's `x` to get you started.
-      // The idea here is to constraint this value to be 0.
-      //
-      // Recall the equations for the model:
-      // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
-      // y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
-      // psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
-      // v_[t+1] = v[t] + a[t] * dt
-      // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
-      // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
       fg[1 + psi_start + t] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
@@ -144,17 +129,9 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   double cte = state[4];
   double epsi = state[5];
 
-  // TODO: Set the number of model variables (includes both states and inputs).
-  // For example: If the state is a 4 element vector, the actuators is a 2
-  // element vector and there are 10 timesteps. The number of variables is:
-  //
-  // 4 * 10 + 2 * 9
   size_t n_vars = N * 6 + (N - 1) * 2;
-  // TODO: Set the number of constraints
   size_t n_constraints = N * 6;
 
-  // Initial value of the independent variables.
-  // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
   for (int i = 0; i < n_vars; i++) {
     vars[i] = 0;
